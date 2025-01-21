@@ -1,0 +1,557 @@
+import mysql.connector
+from datetime import date
+import datetime
+
+mycon=mysql.connector.connect(host="localhost",user="root",passwd="password123",database="SAPAYROLL")
+
+if mycon.is_connected() == False:
+    print("not connected")
+
+     
+cursor=mycon.cursor()
+
+#Menu file for Payroll Management System.
+
+def reports():
+    print("\n\n\n")
+    print(" "*25, "In Emp_details function ")
+    
+    while True :
+        print("="*20,"PAYROLL MANAGEMENT SYSTEM","="*20)
+        print(" "," "*25,"1. Monthly Total Salary Report"," ")
+        print(" "," "*25,"2. Montly Department wise Total Salary"," ")
+        
+        print(" "," "*25,"0. exit"," ")
+        print("="*77)
+        ch=input(" Enter your coice (1/2/0) : ")
+
+        if ch== "1":
+            qr="select mont_name , sum(net_sal)  from Monthlysalary group by mont_name"
+        
+            cursor.execute(qr)
+            me=cursor.fetchall()
+            print("Month", "         ", "Total Salary")
+            for row in me :
+                print(row[0],"       ", row[1])
+        
+            
+        elif ch=="2" :
+            qr="select mont_name , dept_name, sum(net_sal)  from Monthlysalary m, department d, employees e where m.emp_id=e.emp_id and e.dept_id=d.dept_id  group by mont_name"
+        
+            cursor.execute(qr)
+            me=cursor.fetchall()
+            print("Month", "       ", "Department","     ","Total Salary")
+            for row in me :
+                print(row[0],"       ", row[1],"        ",row[2])         
+        elif ch=="0" :
+            print(" "*30," THANK YOU!!! "," ")
+            break
+        else :
+            print("Please enter right choice (1/2/0)")
+        
+def Monthlysalary():
+    
+    dt=str(date.today())
+    print("Today's Date is ",dt)
+    dt=str(dt)
+    day=int(dt[8]+dt[9])
+    
+    monthn=['January', 'February', 'March', 'April', 'May', 'June', 'July',
+          'August', 'September', 'October', 'November', 'December']
+    if day==2:
+        mn=int(dt[5]+dt[6])
+        mn=mn-2
+        Mont_Name=monthn[mn]
+        CurYear=int(dt[0]+dt[1]+dt[2]+dt[3])
+        str1=str("Enter total working days for the month %s : "%(Mont_Name))
+        Tot_Work_Days=int(input(str1 ))
+        
+        
+        Emp=0
+        Emp_Id=[]
+        cursor.execute("select * from Employees")
+        data=cursor.fetchall()
+        for row in data:
+            str1=str("Enter working days for %s : "%(row[0]))
+            Emp_Id=int(row[0])
+            Work_Days=int(input(str1))
+            print("Working Days : ",Work_Days)
+            cbasic=(row[5]/Tot_Work_Days)*Work_Days
+           
+            #cbasic=(row[5]/Tot_Work_Days)*Work_Days
+            cbasic = float("{:.2f}".format(cbasic))
+            print("type cbasic ",cbasic)
+            
+            cursor.execute("select * from Salary")
+            data=cursor.fetchall()
+            tAll=tDec=0
+            for r in data:
+                Percent=int(r[2])
+                TypeAD=r[3]
+                if TypeAD=='A':
+                    All=((cbasic*Percent)/100)
+                    tAll=tAll+All
+                elif TypeAD=='D' :  
+                    Dec= ((cbasic*Percent)/100)
+                    tDec=tDec+Dec
+            
+            Allowance=tAll
+            Deduction=tDec
+            Net_Sal = (cbasic + Allowance) - Deduction
+            Net_Sal = "{:.2f}".format(Net_Sal)
+          
+            print("Month Name : ",Mont_Name)
+            print("Year : ",CurYear)
+            print("Employee Id : ",Emp_Id)
+            print("Total Working Days : ",Tot_Work_Days)
+            print("Working Days: ",Work_Days)
+            print("Total Monthly Salary : ",cbasic)
+            print("Net Salary: ",Net_Sal)
+        
+            
+            qr="insert into monthlysalary (Mont_Name,CurYear,Emp_Id,Tot_Work_Days,Work_Days,Net_Sal) values ('%s' , %s , %s , %s , %s, %s)"%(Mont_Name,CurYear,Emp_Id,Tot_Work_Days,Work_Days,Net_Sal)
+            print("Monthly Salary Has Been Calculated Successfully ")
+            cursor.execute(qr)
+            mycon.commit()
+            
+def Del_dept():
+    
+    print("\n\n\n")
+    print(" "*25, "In Delete Department function ")
+    print("\n\n\n")
+
+    cursor.execute("select * from Department")
+    
+    dt=cursor.fetchall()
+    
+    for row in dt:
+        print(row)  
+        
+    Dept_Id=int(input("Enter Department Id : "))
+    
+    qr="delete from Department where Dept_Id=%s"%(Dept_Id)
+    
+    print("Department details Deleted Successfully ")
+    
+    cursor.execute(qr)
+    
+    mycon.commit()
+    
+    print("Record for ",Dept_Id," Department is deleted Successfully")
+
+    print("="*77)
+    
+def Mod_dept():
+    
+    print("\n\n\n")
+    print(" "*25, "In Modify Department details function ")
+    print("\n\n\n")
+    
+    cursor.execute("SELECT * FROM Department")
+    
+    dt=cursor.fetchall()
+    
+    for row in dt :
+        print(row)
+        
+    Dept_Id =int(input("enter the Department's Id : "))
+    
+    
+    qr="SELECT * FROM Department where Dept_Id=%s"%(Dept_Id)
+        
+    cursor.execute(qr)
+    dt=cursor.fetchall()
+        
+
+    for row in dt:
+        Dept_Id = row[0]
+        Dept_Name = row[1]
+        Tot_Sal= row[2]
+           
+        
+    print(" "*25,"1. Department's Name ")
+    print(" "*25,"2. Department's Total salary")
+    print(" "*25,"0. Exit")
+        
+    ch=int(input("Please enter right choice (1/2/0) "))
+                    
+    while True :
+        if ch==1:
+            Dept_Name = input("Enter the Department's Name : ")
+            break
+        elif ch==2:
+            Tot_Sal= int(input("Enter the Total Salary of the department : "))
+            break
+        elif ch==0 :
+            break
+        else :
+            print("Please enter right choice (1/2/0) ")
+    
+    qr="update Department set Dept_Name='%s',Tot_Sal = %s where Dept_Id = %s "%(Dept_Name,Tot_Sal,Dept_Id)
+    print("Department's details updated sucessfully")
+
+    cursor.execute(qr)
+
+    mycon.commit()
+                    
+    print("="*77)
+    
+def Add_dept():
+    
+    Dept_Id = int(input("enter the Deparment's Id : "))
+    Dept_Name = input("enter the Deparment's Name : ")
+    Tot_Sal = int(input("enter the Deparment's Total salary : "))
+    
+    qr="insert into Department(Dept_Id,Dept_Name,Tot_Sal)values (%s,'%s',%s)"%(Dept_Id,Dept_Name,Tot_Sal)
+    print("Department Details Added Successfully")
+    cursor.execute(qr)
+    
+    mycon.commit()
+    
+    print("="*77)
+
+            
+def Dept_details():
+    
+    print("\n\n\n")
+    print(" "*25, "In Department details function ")
+    
+    while True :
+        print("="*20,"PAYROLL MANAGEMENT SYSTEM","="*20)
+        print(" "," "*25,"1. Add Department"," ")
+        print(" "," "*25,"2. Modify Department Details"," ")
+        print(" "," "*25,"3. Delete Department"," ")
+        print(" "," "*25,"0. Exit"," ")
+        print("="*77)
+        ch=input(" Enter your coice (1/2/3/0) : ")
+
+        if ch== "1":
+            print(" Write Add Department function above and call it here ")
+            Add_dept()
+        elif ch=="2" :
+            print(" Write Modify Department function above and call it here ")
+            Mod_dept()
+        elif ch=="3" :
+            print(" Write Delete function above and call it here ")
+            Del_dept()
+        elif ch=="0" :
+                print(" "*30," THANK YOU!!! "," ")
+                break
+        else :
+            print(" "*25,"Please enter right choice (1/2/3/0) ")
+
+            
+def Del_all_ded():
+    
+    print("\n\n\n")
+    print(" "*25, "In Delete Allowances and Deduction function ")
+    print("\n\n\n")
+
+    cursor.execute("select * from Salary")
+    
+    dt=cursor.fetchall()
+    
+    for row in dt:
+        print(row)  
+        
+    Sal_Id=int(input("Enter Salary Id : "))
+    
+    qr="delete from Salary where Sal_Id=%s"%(Sal_Id)
+    
+    print("Allowances/Deductions Deleted Successfully ")
+    
+    cursor.execute(qr)
+    
+    mycon.commit()
+    
+    print("Record for ",Sal_Id," Salary is deleted Successfully")
+
+    print("="*77)
+
+
+def Mod_all_ded():
+    
+    print("\n\n\n")
+    print(" "*25, "In Modify Allowances and Deduction details function ")
+    print("\n\n\n")
+    
+    cursor.execute("SELECT * FROM Salary")
+    dt=cursor.fetchall()
+    
+    for row in dt :
+        print(row)
+        
+    Sal_Id =int(input("enter the Salary's Id : "))
+    qr="SELECT * FROM Salary where Sal_Id=%s"%(Sal_Id)
+        
+    cursor.execute(qr)
+    mad=cursor.fetchall()
+        
+
+    for row in dt:
+
+        All_ded = row[1]
+        Percentage= row[2]
+        TypeAD= row[3]
+            
+           
+        
+    print(" "*25,"1. Allowances/Deductions")
+    print(" "*25,"2. Percentage")
+    print(" "*25,"3. TypeAD")
+    print(" "*25,"0. Exit")
+        
+    ch=int(input("Please enter right choice (1/2/3/0)"))
+                    
+    while True :
+        if ch==1:
+            All_ded= input("Enter Allowances/Deductions : ")
+            break
+        elif ch==2:
+            Percentage = int(input("Enter the Percentage : "))
+            break
+        elif ch==3:
+            TypeAD= input("Enter the TypeAD : ")
+            break
+        elif ch==0 :
+            break
+        else :
+            print(" "*25,"Please enter right choice (1/2/3/0) ")
+    qr="update Salary set All_ded='%s',Percentage = %s,TypeAD='%s' where Sal_Id = %s "%(All_ded,Percentage,TypeAD,Sal_Id)
+    print("Department's details updated sucessfully")
+
+    cursor.execute(qr)
+
+    mycon.commit()
+                    
+    print("="*77)
+        
+
+def Add_all_ded():
+    
+    print("\n\n\n")
+    print(" "*25, "In Add Allowances and Deduction function ")
+    print("\n\n\n")
+    cursor.execute("select * from Salary")
+    Ad=cursor.fetchall()
+    for row in Ad:
+        print(row)
+    
+    Sal_Id= int(input("Enter Salary Id"))    
+    All_ded = input("Add Allowances/Deductions ")
+    Percentage = int(input("Add Percentage For Allowances/Deductions "))
+    TypeAD = input("Add A for Allowances/D for Deductions (A/D)")
+    
+    qr="insert into Salary(Sal_Id,All_ded,Percentage,TypeAD) values (%s,'%s', %s , '%s' )"%(Sal_Id,All_ded,Percentage,TypeAD)
+
+    print("Allowances/Deductions Added Successfully ")
+
+    cursor.execute(qr)
+    
+    mycon.commit()
+
+        
+def Sal_details():
+    
+    print("\n\n\n")
+    print(" "*25, "In Sal_details function ")
+    
+    while True :
+        print("="*20,"PAYROLL MANAGEMENT SYSTEM","="*20)
+        print(" "," "*25,"1. Add Allowances and Deduction Employee"," ")
+        print(" "," "*25,"2. Modify Allowances and Deduction Details"," ")
+        print(" "," "*25,"3. Delete Allowances and Deduction"," ")
+        print(" "," "*25,"0. Exit"," ")
+        print("="*77)
+        ch=input(" Enter your coice (1/2/3/0) : ")
+
+        if ch== "1":
+            print(" Write Add Department function above and call it here ")
+            Add_all_ded()
+        elif ch=="2" :
+            print(" Write Modify Department Details function above and call it here ")
+            Mod_all_ded()
+        elif ch=="3" :
+            print(" Write Delete function above and call it here ")
+            Del_all_ded()
+        elif ch=="0" :
+                print(" "*30," THANK YOU!!! "," ")
+                break
+        else :
+            print(" "*25,"Please enter right choice (1/2/3/0) ")
+            
+
+def Del_emp():
+    
+    print("\n\n\n")
+    print(" "*25, "In Delete Employee function ")
+    print("\n\n\n")
+    cursor.execute("select * from Employees")
+    dt=cursor.fetchall()
+        
+       
+    for row in dt:
+        print(row)  
+        
+    Emp_Id=int(input("Enter the Employee's Id :"))
+                          
+    qr="Delete from Employees where Emp_Id=%s"%(Emp_Id)
+    print("Employee Details Deleted Successfully")
+    
+    cursor.execute(qr)
+    
+    mycon.commit()
+    
+    print("Record for Employee",qr,"has been deleted Successfully")
+    
+    print("="*77)
+
+
+
+def Mod_emp():
+    
+    print("\n\n\n")
+    print(" "*25, "In Modify_employee_details function ")
+    print("\n\n\n")
+    cursor.execute("SELECT * FROM employees")
+    me=cursor.fetchall()
+    
+    for row in me :
+        print(row)
+        
+    Emp_Id =int(input("enter the Employee's Id : "))
+    qr="SELECT * FROM employees where Emp_Id=%s"%(Emp_Id)
+        
+    cursor.execute(qr)
+    me=cursor.fetchall()
+        
+
+    for row in me:
+            Emp_Name = row[1]
+            Dept_Id = row[2]
+            BirthDate = row[3]
+            Degination = row[4]
+            BasicSalary = row[5]
+            
+           
+        
+    print(" "*25,"1. Employee Name ")
+    print(" "*25,"2. Employee's department id ")
+    print(" "*25,"3. Birth date of Employee ")
+    print(" "*25,"4. Employee's degination ")
+    print(" "*25,"5. Employee's basic salary")
+    print(" "*25,"0. Exit")
+        
+    ch=int(input("Pls enter which field you wish to modify "))
+                    
+    while True :
+        if ch==1:
+            Emp_Name = input("enter the Employee's Name : ")
+            break
+        elif ch==2:
+            Dept_Id = int(input("enter the Employee's Department Id : "))
+            break
+        elif ch==3:
+            BirthDate = input("enter the Birth date of Employee : ")
+            break
+        elif ch==4:
+            Degination= input("enter the Employee's degination : ")
+            break
+        elif ch==5:
+            BasicSalary = int(input("enter the Employee's Basic salary : "))
+            break
+        elif ch==0 :
+            break
+        else :
+            print(" "*25,"Please enter right choice (1/2/3/4/5/0) ")
+    qr="update Employees set Emp_Name='%s',Dept_Id = %s,BirthDate = '%s',Degination= '%s',BasicSalary = %s where Emp_Id = %s"%(Emp_Name,Dept_Id,BirthDate,Degination,BasicSalary,Emp_Id)
+    print("Employee's details updated sucessfully")
+
+    cursor.execute(qr)
+
+    mycon.commit()
+                    
+    print("="*77)
+        
+
+        
+def New_emp():
+    
+    Emp_Id = int(input("enter the Employee's Id : "))
+    Emp_Name = input("enter the Employee's Name : ")
+    Dept_Id = int(input("enter the Employee's Department Id : "))
+    BirthDate = input("enter the Birth date of Employee : ")
+    Degination = input("enter the Employee's degination : ")
+    BasicSalary = int(input("enter the Employee's Basic salary : "))
+    qr="insert into Employees(Emp_Id,Emp_Name,Dept_Id,BirthDate,Degination,BasicSalary) values (%s,'%s',%s,'%s','%s',%s)"%(Emp_Id,Emp_Name,Dept_Id,BirthDate,Degination,BasicSalary)
+    print("Employee Details Added Successfully")
+    cursor.execute(qr)
+    
+    mycon.commit()
+    
+    print("="*77)
+           
+
+def Emp_details():
+    
+    print("\n\n\n")
+    print(" "*25, "In Emp_details function ")
+    
+    while True :
+        print("="*20,"PAYROLL MANAGEMENT SYSTEM","="*20)
+        print(" "," "*25,"1. Add New Employee details"," ")
+        print(" "," "*25,"2. Modify Employee Details"," ")
+        print(" "," "*25,"3. Delete Employee details"," ")
+        print(" "," "*25,"0. exit"," ")
+        print("="*77)
+        ch=input(" Enter your coice (1/2/3/0) : ")
+
+        if ch== "1":
+            
+            New_emp()
+        elif ch=="2" :
+           
+            Mod_emp()
+        elif ch=="3" :
+            
+            Del_emp()
+        elif ch=="0" :
+                print(" "*30," THANK YOU!!! "," ")
+                break
+        else :
+            print(" "*25,"Please enter right choice (1/2/3/0) ")
+
+
+
+def Main_menu() :
+    print("\n"*30 )
+    
+    while True :
+        print("="*20,"PAYROLL MANAGEMENT SYSTEM","="*20)
+        print(" "*25,"1. Employee Details  " )
+        print(" "*25,"2. Salary Details ")
+        print(" "*25,"3. Department Details ")
+        print(" "*25,"4. Monthly Salary ")
+        print(" "*25,"5. Reports ")       
+        print(" "*25,"0. Exit")
+        print("="*77)
+        ch=input(" Enter your coice (1/2/0) : ")
+        if ch== "1":
+            Emp_details()
+        elif ch=="2" :
+            
+            Sal_details()
+        elif ch=="3" :
+            Dept_details()
+        elif ch=="4" :
+            Monthlysalary()
+        elif ch=="5" :
+            reports()
+        elif ch=="0" :
+            print(" "*30," THANK YOU!!! "," ")
+            break
+        else :
+            print(" "*25,"Please enter right choice (1/2/3/4/5/0) ")
+
+Main_menu()
+
